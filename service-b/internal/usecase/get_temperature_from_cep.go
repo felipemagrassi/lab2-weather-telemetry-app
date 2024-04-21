@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/felipemagrassi/weather-cep-api/internal/service"
+	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/service"
 )
 
 type GetTemperatureFromCepInput struct {

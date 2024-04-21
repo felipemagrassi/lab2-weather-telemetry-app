@@ -4,19 +4,19 @@ import (
 	"context"
 	"testing"
 
-	"github.com/felipemagrassi/weather-cep-api/internal/service"
-	"github.com/felipemagrassi/weather-cep-api/internal/service/mocks"
+	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/service"
+	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/service/mocks"
 	"go.uber.org/mock/gomock"
 )
 
 func TestGetTemperatureFromCepUseCase(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	cep_service := mocks.NewMockCepService(ctrl)
-	weather_service := mocks.NewMockWeatherService(ctrl)
+	controller := gomock.NewController(t)
+	cepService := mocks.NewMockCepService(controller)
+	weatherService := mocks.NewMockWeatherService(controller)
 	ctx := context.Background()
 	cep := "12345678"
 
-	cep_service.
+	cepService.
 		EXPECT().
 		GetAddressByCep(ctx, cep).
 		Return(&service.ViaCepResponse{
@@ -32,13 +32,13 @@ func TestGetTemperatureFromCepUseCase(t *testing.T) {
 			Siafi:       "Siafi",
 		}, nil)
 
-	weather_service.EXPECT().GetWeatherByCity(ctx, "Localidade").Return(&service.WeatherResponse{
+	weatherService.EXPECT().GetWeatherByCity(ctx, "Localidade").Return(&service.WeatherResponse{
 		Name:   "Localidade",
 		Temp_c: 10,
 		Temp_f: 50,
 	}, nil)
 
-	usecase := NewGetTemperatureFromCepUseCase(cep_service, weather_service)
+	usecase := NewGetTemperatureFromCepUseCase(cepService, weatherService)
 	output, err := usecase.Execute(ctx, &GetTemperatureFromCepInput{Cep: cep})
 	if err != nil {
 		t.Errorf("Error: %v", err)

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/felipemagrassi/weather-cep-api/internal/usecase"
+	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/usecase"
 )
 
 type BodySchema struct {
