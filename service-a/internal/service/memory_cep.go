@@ -1,14 +1,18 @@
 package service
 
 import (
+	"math"
 	"math/rand"
 )
 
-type MemoryCepService struct {
-}
+type MemoryCepService struct{}
 
 func NewMemoryCepService() *MemoryCepService {
 	return &MemoryCepService{}
+}
+
+func (s *MemoryCepService) Name() string {
+	return "Memory Cep Service"
 }
 
 func (s *MemoryCepService) GetTemperature(cep string) (*CepServiceOutput, error) {
@@ -20,7 +24,10 @@ func (s *MemoryCepService) GetTemperature(cep string) (*CepServiceOutput, error)
 		return nil, CepNotFoundError
 	}
 
-	temperature := rand.Float64() + 20
+	min := 5.0
+	max := 35.0
+	random := min + rand.Float64()*(max-min)
+	temperature := math.Round(random)
 
 	return &CepServiceOutput{
 		Cep:    cep,

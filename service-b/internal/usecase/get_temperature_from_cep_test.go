@@ -55,5 +55,4 @@ func TestGetTemperatureFromCepUseCase(t *testing.T) {
 	if output.Kelvin != 283.15 {
 		t.Errorf("Expected 283.15, got %v", output.Kelvin)
 	}
-
 }

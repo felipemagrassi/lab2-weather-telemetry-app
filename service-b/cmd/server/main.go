@@ -3,20 +3,21 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/handler"
 	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/service"
 	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/usecase"
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
-func main() {
-	godotenv.Load(".env")
+func init() {
+	viper.AutomaticEnv()
+}
 
+func main() {
 	var (
-		webServerPort                = os.Getenv("WEB_SERVER_PORT")
-		weatherApiKey                = os.Getenv("WEATHER_API_KEY")
+		webServerPort                = viper.GetString("HTTP_PORT")
+		weatherApiKey                = viper.GetString("WEATHER_API_KEY")
 		weatherService               = service.NewWeatherApiService(weatherApiKey)
 		cepService                   = service.NewViaCepService()
 		getTemperatureFromCepUseCase = usecase.NewGetTemperatureFromCepUseCase(cepService, weatherService)
@@ -25,5 +26,6 @@ func main() {
 
 	http.HandleFunc("/", getTemperatureHandler.Handle)
 	fmt.Println("Server running at :", webServerPort)
-	http.ListenAndServe(fmt.Sprintf(":%s", webServerPort), nil)
+	port := fmt.Sprintf(":%s", webServerPort)
+	http.ListenAndServe(port, nil)
 }

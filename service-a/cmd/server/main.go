@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
+	"strings"
 
-	"github.com/felipemagrassi/weather-cep-api/service-a/internal/service"
-	"github.com/joho/godotenv"
+	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-a/internal/service"
+	"github.com/spf13/viper"
 )
 
 type Input struct {
@@ -23,16 +23,14 @@ type ServiceBResponse struct {
 	Temp_K string `json:"temp_K"`
 }
 
-func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+func init() {
+	viper.AutomaticEnv()
+}
 
+func main() {
 	var (
-		webServerPort = os.Getenv("WEB_SERVER_PORT")
-		mockedService = os.Getenv("MOCKED_SERVICE")
-		cepService    = cepServiceGateway(mockedService == "true")
+		webServerPort = viper.GetString("HTTP_PORT")
+		cepService    = cepServiceGateway(viper.GetString("CEP_SERVICE"))
 	)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +39,7 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Received POST REQUEST using service: ", cepService)
+		fmt.Printf("\nReceived POST request using service: %s", cepService.Name())
 
 		input := &Input{}
 		err := json.NewDecoder(r.Body).Decode(&input)
@@ -56,7 +54,6 @@ func main() {
 		}
 
 		output, err := cepService.GetTemperature(input.Cep)
-
 		if err != nil {
 			if err == service.InvalidCepError {
 				http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
@@ -81,13 +78,12 @@ func main() {
 			Temp_K: fmt.Sprintf("%f", output.Temp_K),
 			Temp_F: fmt.Sprintf("%f", output.Temp_F),
 		})
-
 	})
 
 	fmt.Println("Server running at port:", webServerPort)
-
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", webServerPort), nil); err != nil {
-		log.Fatal("Error initializing server")
+	port := fmt.Sprintf(":%s", webServerPort)
+	if err := http.ListenAndServe(port, nil); err != nil {
+		log.Fatal("Error initializing server, ", err)
 	}
 }
 
@@ -104,10 +100,14 @@ func validCEP(cep string) bool {
 	return true
 }
 
-func cepServiceGateway(mocked bool) service.CepService {
-	if mocked {
+func cepServiceGateway(cepService string) service.CepService {
+	switch strings.ToUpper(cepService) {
+	case "MEMORY":
 		return service.NewMemoryCepService()
+	case "B":
+		return service.NewBService()
+	default:
+		log.Fatal("Invalid CEP Service")
+		return nil
 	}
-
-	return service.NewBService()
 }

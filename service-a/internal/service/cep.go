@@ -4,6 +4,7 @@ import "errors"
 
 type CepService interface {
 	GetTemperature(cep string) (*CepServiceOutput, error)
+	Name() string
 }
 
 type CepServiceOutput struct {
