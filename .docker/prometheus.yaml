@@ -4,11 +4,11 @@ scrape_configs:
     static_configs:
       - targets: ['otel-collector:8889']
       - targets: ['otel-collector:8888']
-  - job_name: 'service_a'
+  - job_name: 'servicea'
     scrape_interval: 10s
     static_configs:
-      - targets: ['service_a:8080']
-  - job_name: 'service_b'
+      - targets: ['servicea:8080']
+  - job_name: 'serviceb'
     scrape_interval: 10s
     static_configs:
-      - targets: ['service_b:8181']
+      - targets: ['serviceb:8181']

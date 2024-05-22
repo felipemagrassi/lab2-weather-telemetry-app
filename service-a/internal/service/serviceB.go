@@ -1,5 +1,7 @@
 package service
 
+import "context"
+
 type BService struct{}
 
 func NewBService() *BService {
@@ -10,6 +12,6 @@ func (b *BService) Name() string {
 	return "B Cep Service"
 }
 
-func (b *BService) GetTemperature(cep string) (*CepServiceOutput, error) {
+func (b *BService) GetTemperature(ctx context.Context, cep string) (*CepServiceOutput, error) {
 	return &CepServiceOutput{}, nil
 }

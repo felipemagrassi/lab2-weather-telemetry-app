@@ -37,13 +37,14 @@ services:
     depends_on:
       - prometheus
 
-  service_a:
-    container_name: service_a
+  servicea:
+    container_name: servicea
     build:
       context: service-a
     environment:
       - HTTP_PORT=8080
       - CEP_SERVICE=MEMORY
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
     ports:
       - "8080:8080"
     depends_on:
@@ -51,12 +52,13 @@ services:
       - prometheus
       - otel-collector
 
-  service_b:
-    container_name: service_b
+  serviceb:
+    container_name: serviceb
     build:
       context: service-b
     environment:
       - HTTP_PORT=8181
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
     ports:
       - "8181:8181"
     depends_on:

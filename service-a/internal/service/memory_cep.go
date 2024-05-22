@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"math"
 	"math/rand"
 )
@@ -15,7 +16,7 @@ func (s *MemoryCepService) Name() string {
 	return "Memory Cep Service"
 }
 
-func (s *MemoryCepService) GetTemperature(cep string) (*CepServiceOutput, error) {
+func (s *MemoryCepService) GetTemperature(ctx context.Context, cep string) (*CepServiceOutput, error) {
 	if len(cep) != 8 {
 		return nil, InvalidCepError
 	}

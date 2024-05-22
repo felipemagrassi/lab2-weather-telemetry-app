@@ -1,9 +1,12 @@
 package service
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type CepService interface {
-	GetTemperature(cep string) (*CepServiceOutput, error)
+	GetTemperature(context.Context, string) (*CepServiceOutput, error)
 	Name() string
 }
 
