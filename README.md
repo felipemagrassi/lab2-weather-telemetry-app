@@ -27,5 +27,5 @@ curl -X POST localhost:8080/cep -d '{"cep": "20561250"}'
 ## Zipkin Traces
 
 Open `localhost:9411` and you should see the traces from your call
-[zipkin](screenshots/zipkin.png)
+![zipkin](screenshots/zipkin.png)
 
