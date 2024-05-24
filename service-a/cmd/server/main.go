@@ -14,6 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+
 	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-a/internal/service"
 	"github.com/spf13/viper"
 
@@ -40,26 +43,32 @@ func init() {
 	viper.AutomaticEnv()
 }
 
-func initProvider(exporterURL string) {
-	traceExporter, err := zipkin.New(exporterURL)
+func initProvider() (func(context.Context) error, error) {
+	traceExporter, err := zipkin.New("http://zipkin:9411/api/v2/spans")
 	if err != nil {
-		log.Fatalf("failed to create trace exporter: %v", err)
+		return nil, err
 	}
 
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	batcher := trace.NewBatchSpanProcessor(traceExporter)
+
 	tp := trace.NewTracerProvider(
-		trace.WithBatcher(traceExporter),
-		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String("service-a"))),
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithSpanProcessor(batcher),
+		trace.WithResource(
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceNameKey.String("service-a"),
+			),
+		),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	return tp.Shutdown, nil
 }
 
 func main() {
-	var (
-		webServerPort = viper.GetString("HTTP_PORT")
-		cepService    = cepServiceGateway(viper.GetString("CEP_SERVICE"))
-		exporterURL   = viper.GetString("EXPORTER_URL")
-	)
+	webServerPort := viper.GetString("HTTP_PORT")
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
@@ -70,54 +79,20 @@ func main() {
 	)
 	defer cancel()
 
-	initProvider(exporterURL)
+	_, err := initProvider()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		fmt.Printf("\nReceived POST request using service: %s", cepService.Name())
-
-		parsedCep, err := parseCep(r.Body)
-		if err != nil {
-			http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
-			return
-		}
-
-		output, err := cepService.GetTemperature(
-			r.Context(),
-			parsedCep,
-		)
-		if err != nil {
-			if err == service.InvalidCepError {
-				http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
-				return
-			}
-
-			if err == service.CepNotFoundError {
-				http.Error(w, "can not find zipcode", http.StatusNotFound)
-				return
-			}
-
-			http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
-			return
-
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&ServiceBResponse{
-			City:   output.City,
-			Temp_C: fmt.Sprintf("%f", output.Temp_C),
-			Temp_K: fmt.Sprintf("%f", output.Temp_K),
-			Temp_F: fmt.Sprintf("%f", output.Temp_F),
-		})
-	})
 	go func() {
+		r := chi.NewRouter()
+		r.Use(middleware.Logger)
+		r.Use(middleware.Recoverer)
+		r.Post("/cep", cepHandler)
+
 		fmt.Println("Server running at port:", webServerPort)
 		port := fmt.Sprintf(":%s", webServerPort)
-		if err := http.ListenAndServe(port, nil); err != nil {
+		if err := http.ListenAndServe(port, r); err != nil {
 			log.Fatal("Error initializing server, ", err)
 		}
 	}()
@@ -136,15 +111,65 @@ func main() {
 	defer shutdownCancel()
 }
 
+func cepHandler(w http.ResponseWriter, r *http.Request) {
+	cepService := cepServiceGateway(viper.GetString("CEP_SERVICE"))
+	carrier := propagation.HeaderCarrier(
+		r.Header,
+	)
+	ctx := r.Context()
+	ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
+
+	tr := otel.Tracer("a-b-trace")
+	ctx, span := tr.Start(ctx, "get weather")
+	defer span.End()
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	parsedCep, err := parseCep(r.Body)
+	if err != nil {
+		http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
+		return
+	}
+
+	output, err := cepService.GetTemperature(
+		ctx,
+		parsedCep,
+	)
+	if err != nil {
+		if err == service.InvalidCepError {
+			http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
+			return
+		}
+
+		if err == service.CepNotFoundError {
+			http.Error(w, "can not find zipcode", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "invalid zipcode", http.StatusUnprocessableEntity)
+		return
+
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&ServiceBResponse{
+		City:   output.City,
+		Temp_C: fmt.Sprintf("%f", output.Temp_C),
+		Temp_K: fmt.Sprintf("%f", output.Temp_K),
+		Temp_F: fmt.Sprintf("%f", output.Temp_F),
+	})
+}
+
 func cepServiceGateway(cepService string) service.CepService {
 	switch strings.ToUpper(cepService) {
 	case "MEMORY":
 		return service.NewMemoryCepService()
-	case "B":
-		return service.NewBService()
 	default:
-		log.Fatal("Invalid CEP Service")
-		return nil
+		return service.NewBService()
 	}
 }
 

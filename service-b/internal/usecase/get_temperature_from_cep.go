@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/service"
+	"go.opentelemetry.io/otel"
 )
 
 type GetTemperatureFromCepInput struct {
@@ -24,7 +25,8 @@ type GetTemperatureFromCepUseCase struct {
 
 func NewGetTemperatureFromCepUseCase(
 	cepService service.CepService,
-	weatherService service.WeatherService) *GetTemperatureFromCepUseCase {
+	weatherService service.WeatherService,
+) *GetTemperatureFromCepUseCase {
 	return &GetTemperatureFromCepUseCase{
 		CepService:     cepService,
 		WeatherService: weatherService,
@@ -33,7 +35,12 @@ func NewGetTemperatureFromCepUseCase(
 
 func (u *GetTemperatureFromCepUseCase) Execute(
 	ctx context.Context,
-	input *GetTemperatureFromCepInput) (*GetTemperatureFromCepOutput, error) {
+	input *GetTemperatureFromCepInput,
+) (*GetTemperatureFromCepOutput, error) {
+	tracer := otel.Tracer("a-b-trace")
+	ctx, span := tracer.Start(ctx, "GetTemperatureFromCepUseCase.Execute")
+	defer span.End()
+
 	address, err := u.CepService.GetAddressByCep(ctx, input.Cep)
 	if err != nil {
 		return nil, err
@@ -46,5 +53,6 @@ func (u *GetTemperatureFromCepUseCase) Execute(
 		Celsius:    weather.Temp_c,
 		Fahrenheit: weather.Temp_f,
 		Kelvin:     weather.Temp_c + 273.15,
+		City:       address.Localidade,
 	}, nil
 }

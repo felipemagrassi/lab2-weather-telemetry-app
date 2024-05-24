@@ -19,7 +19,8 @@ func (s *MemoryCepService) Name() string {
 }
 
 func (s *MemoryCepService) GetTemperature(ctx context.Context, cep string) (*CepServiceOutput, error) {
-	_, span := otel.Tracer("service-a").Start(ctx, "MemoryCepService.GetTemperature")
+	tr := otel.Tracer("a-b-trace")
+	ctx, span := tr.Start(ctx, "MemoryCepService.GetTemperature")
 	defer span.End()
 
 	if len(cep) != 8 {

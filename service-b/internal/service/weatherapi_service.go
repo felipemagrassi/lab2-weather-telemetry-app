@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+
+	"go.opentelemetry.io/otel"
 )
 
 type WeatherService interface {
@@ -49,6 +51,10 @@ func NewWeatherApiService(apiKey string) *WeatherApiService {
 var WeatherServiceError = errors.New("error getting weather")
 
 func (w *WeatherApiService) GetWeatherByCity(ctx context.Context, city string) (*WeatherResponse, error) {
+	tracer := otel.Tracer("a-b-trace")
+	ctx, span := tracer.Start(ctx, "GetWeatherByCity - WeatherAPI")
+	defer span.End()
+
 	queryParams := url.Values{}
 	queryParams.Add("q", city)
 	queryParams.Add("key", w.apiKey)

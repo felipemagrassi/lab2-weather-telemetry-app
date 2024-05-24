@@ -6,11 +6,9 @@ import (
 	"regexp"
 
 	"github.com/felipemagrassi/lab2-weather-telemetry-app/service-b/internal/usecase"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
-
-type BodySchema struct {
-	cep string `json:"cep"`
-}
 
 type GetTemperatureHandler struct {
 	getTemperatureFromCep *usecase.GetTemperatureFromCepUseCase
@@ -28,6 +26,10 @@ func NewGetTemperatureHandler(getTemperatureFromCep *usecase.GetTemperatureFromC
 }
 
 func (h *GetTemperatureHandler) Handle(w http.ResponseWriter, r *http.Request) {
+	carrier := propagation.HeaderCarrier(r.Header)
+	ctx := r.Context()
+	ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
+
 	cep, ok := h.getCep(r)
 	if !ok {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -36,7 +38,7 @@ func (h *GetTemperatureHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &usecase.GetTemperatureFromCepInput{Cep: cep}
-	output, err := h.getTemperatureFromCep.Execute(r.Context(), input)
+	output, err := h.getTemperatureFromCep.Execute(ctx, input)
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -50,28 +52,23 @@ func (h *GetTemperatureHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		Fahrenheit: output.Fahrenheit,
 		Kelvin:     output.Kelvin,
 	})
-
 }
 
 func (h *GetTemperatureHandler) getCep(r *http.Request) (string, bool) {
-	bodySchema := BodySchema{}
-	err := json.NewDecoder(r.Body).Decode(&bodySchema)
-	if err != nil {
+	cep := r.URL.Query().Get("cep")
+
+	if cep == "" {
 		return "", false
 	}
 
-	if bodySchema.cep == "" {
-		return "", false
-	}
-
-	if len(bodySchema.cep) != 8 {
+	if len(cep) != 8 {
 		return "", false
 	}
 
 	numRegex := regexp.MustCompile(`[0-9]`)
-	if !numRegex.MatchString(bodySchema.cep) {
+	if !numRegex.MatchString(cep) {
 		return "", false
 	}
 
-	return bodySchema.cep, true
+	return cep, true
 }

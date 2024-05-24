@@ -3,6 +3,7 @@ module github.com/felipemagrassi/lab2-weather-telemetry-app/service-a
 go 1.22.1
 
 require (
+	github.com/go-chi/chi v1.5.5
 	github.com/spf13/viper v1.18.2
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/exporters/zipkin v1.27.0

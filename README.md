@@ -1,37 +1,31 @@
 # Weather Cep API
 
-This API is a simple weather API that returns the temperature of a city by receiving a CEP (Brazilian Zip Code) as a parameter.
+This API is a simple weather API that returns the temperature of a city by receiving a CEP (Brazilian Zip Code) as a parameter and has spans with zipkin.
 
 ## Usage
 
-1. Run locally with docker-compose
+1. Copy `.env.sample` to `.env`
+```bash
+cp .env.sample .env
+```
+
+2. Add your WEATHER_API_KEY to `.env` file
+`
+WEATHER_API_KEY=XXXXXXXXX
+`
+
+3. Run locally with docker-compose
 ```bash
 docker compose up --build
 ```
 
-2. Add the CEP as a parameter in the URL and the API will return the temperature of the city.
+4. Add the CEP as a parameter in the URL and the API will return the temperature of the city.
 ```bash
-curl "http://localhost:8080/?cep=10010-000"
+curl -X POST localhost:8080/cep -d '{"cep": "20561250"}'
 ```
 
-## Using in production
+## Zipkin Traces
 
-Run `cp .env.sample .env` and fill the environment variables with your own values or 
-create a `.env` file with an environment variable called `WEATHER_API_KEY` with your Weather API key (https://www.weatherapi.com/)
+Open `localhost:9411` and you should see the traces from your call
+[zipkin](screenshots/zipkin.png)
 
-1. To run the docker compose production file: 
-
-```bash 
-docker compose -f docker-compose.prod.yml up
-```
-
-## Demo in Google Cloud Run
-
-* With valid cep
-https://weather-cep-api-zj3c47ztra-uc.a.run.app/?cep=20561-250
-
-* With invalid cep
-https://weather-cep-api-zj3c47ztra-uc.a.run.app/?cep=
-
-* With not found cep 
-https://weather-cep-api-zj3c47ztra-uc.a.run.app/?cep=11111-111

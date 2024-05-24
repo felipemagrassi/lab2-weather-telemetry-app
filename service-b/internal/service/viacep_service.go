@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"go.opentelemetry.io/otel"
 )
 
 type CepService interface {
@@ -33,9 +35,7 @@ type ViaCepService struct {
 	logger *log.Logger
 }
 
-var (
-	CepServiceError = errors.New("error getting address")
-)
+var CepServiceError = errors.New("error getting address")
 
 func NewViaCepService() *ViaCepService {
 	return &ViaCepService{
@@ -45,6 +45,10 @@ func NewViaCepService() *ViaCepService {
 }
 
 func (v *ViaCepService) GetAddressByCep(ctx context.Context, cep string) (*ViaCepResponse, error) {
+	tracer := otel.Tracer("a-b-trace")
+	ctx, span := tracer.Start(ctx, "GetAddressByCep - ViaCep")
+	defer span.End()
+
 	cep = strings.ReplaceAll(cep, "-", "")
 	url := "https://viacep.com.br/ws/" + cep + "/json"
 

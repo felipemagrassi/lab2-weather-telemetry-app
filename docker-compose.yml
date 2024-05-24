@@ -3,6 +3,8 @@ services:
   zipkin:
     image: openzipkin/zipkin
     container_name: zipkin
+    networks: 
+      - microservice
     restart: always
     ports:
       - "9411:9411"
@@ -13,8 +15,8 @@ services:
       context: service-a
     environment:
       - HTTP_PORT=8080
-      - CEP_SERVICE=MEMORY
-      - EXPORTER_URL=http://zipkin:9411/api/v2/spans
+    networks: 
+      - microservice
     ports:
       - "8080:8080"
     depends_on:
@@ -24,10 +26,16 @@ services:
     container_name: serviceb
     build:
       context: service-b
+    env_file:
+      - .env
+    networks: 
+      - microservice
     environment:
       - HTTP_PORT=8181
-      - EXPORTER_URL=http://zipkin:9411/api/v2/spans
     ports:
       - "8181:8181"
     depends_on:
       - zipkin
+
+networks:
+  microservice:
