@@ -33,6 +33,8 @@ func NewGetTemperatureFromCepUseCase(
 	}
 }
 
+var CepNotFoundError = service.CepNotFoundError
+
 func (u *GetTemperatureFromCepUseCase) Execute(
 	ctx context.Context,
 	input *GetTemperatureFromCepInput,

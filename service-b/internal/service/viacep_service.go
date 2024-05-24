@@ -35,7 +35,10 @@ type ViaCepService struct {
 	logger *log.Logger
 }
 
-var CepServiceError = errors.New("error getting address")
+var (
+	CepServiceError  = errors.New("error getting address")
+	CepNotFoundError = errors.New("cep not found")
+)
 
 func NewViaCepService() *ViaCepService {
 	return &ViaCepService{
@@ -77,6 +80,10 @@ func (v *ViaCepService) GetAddressByCep(ctx context.Context, cep string) (*ViaCe
 	err = json.Unmarshal(body, &viaCepResponse)
 	if err != nil {
 		return nil, err
+	}
+
+	if viaCepResponse.Cep == "" {
+		return nil, CepNotFoundError
 	}
 
 	return viaCepResponse, nil

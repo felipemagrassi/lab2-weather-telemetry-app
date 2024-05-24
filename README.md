@@ -29,3 +29,21 @@ curl -X POST localhost:8080/cep -d '{"cep": "20561250"}'
 Open `localhost:9411` and you should see the traces from your call
 ![zipkin](screenshots/zipkin.png)
 
+## UseCases
+
+200 Case:
+```bash
+curl -X POST localhost:8080/cep -d '{"cep": "20561250"}'
+```
+
+422 Case:
+```bash
+curl -X POST localhost:8080/cep -d '{"cep": "1234"}'
+
+```
+404 Case:
+```bash
+curl -X POST localhost:8080/cep -d '{"cep": "00000000"}'
+```
+
+![usecases](screenshots/usecases.png)

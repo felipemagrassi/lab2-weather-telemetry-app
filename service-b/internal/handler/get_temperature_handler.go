@@ -40,6 +40,10 @@ func (h *GetTemperatureHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	input := &usecase.GetTemperatureFromCepInput{Cep: cep}
 	output, err := h.getTemperatureFromCep.Execute(ctx, input)
 	if err != nil {
+		if err == usecase.CepNotFoundError {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
