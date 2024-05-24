@@ -10,7 +10,7 @@ exporters:
   logging:
 
   otlp:
-    endpoint: jaeger-all-in-one:4317
+    endpoint: zipkin:9411
     tls:
       insecure: true
 

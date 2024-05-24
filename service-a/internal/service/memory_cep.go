@@ -4,6 +4,8 @@ import (
 	"context"
 	"math"
 	"math/rand"
+
+	"go.opentelemetry.io/otel"
 )
 
 type MemoryCepService struct{}
@@ -17,6 +19,9 @@ func (s *MemoryCepService) Name() string {
 }
 
 func (s *MemoryCepService) GetTemperature(ctx context.Context, cep string) (*CepServiceOutput, error) {
+	_, span := otel.Tracer("service-a").Start(ctx, "MemoryCepService.GetTemperature")
+	defer span.End()
+
 	if len(cep) != 8 {
 		return nil, InvalidCepError
 	}
